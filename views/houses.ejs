@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Houses - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <h1>Your Registered Houses</h1>
+    <a href="/dashboard">Back to Dashboard</a> | <a href="/houses/new">Register New House</a>
+    <hr>
+  <% if (houses.length === 0) { %>
+    <p>You have not registered any houses yet.</p>
+  <% } else { %>
+    <div class="house-cards">
+      <% houses.forEach(function(house) { %>
+        <div class="card house-card" style="text-align:center;margin-bottom:1em;">
+          <% /* [A] B */ %>
+          <div style="font-size:1.15em;font-weight:bold;">
+            [
+            <% if (house.type === 'FC Room') { %>FC ROOM<% } 
+               else if (house.type === 'Apartment') { %>Apartment<% } 
+               else if (['Small','Medium','Large'].includes(house.type) && house.OwningFC) { %>FC House<% } 
+               else if (['Small','Medium','Large'].includes(house.type)) { %>Personal House<% } 
+               else { %><%= house.type %><% } %>
+            ]
+            <% if (house.type === 'FC Room' && house.OwningCharacter) { %>
+              <%= house.OwningCharacter.name %>
+            <% } else if (house.OwningFC) { %>
+              <%= house.OwningFC.name %> <% if (house.OwningFC.tag) { %>[<%= house.OwningFC.tag %>]<% } %>
+            <% } else if (house.OwningCharacter) { %>
+              <%= house.OwningCharacter.name %>
+            <% } %>
+          </div>
+
+          <% /* C - Ward D, Plot E */ %>
+          <div style="margin:0.4em 0 0.6em 0;">
+            <% if (house.type === 'FC Room') { %>
+              <%= house.OwningFC ? house.OwningFC.name : '' %> - Room <%= house.plot %>
+            <% } else if (house.type === 'Apartment') { %>
+              <%= house.district %> - Ward <%= house.ward %>, Room <%= house.plot %>
+            <% } else if (['Small','Medium','Large'].includes(house.type) && house.OwningFC) { %>
+              <%= house.district %> - Plot <%= house.plot %>
+            <% } else if (['Small','Medium','Large'].includes(house.type)) { %>
+              <%= house.district %> - Ward <%= house.ward %>, Plot <%= house.plot %>
+            <% } else { %>
+              <%= house.district %> - Ward <%= house.ward %>, Plot <%= house.plot %>
+            <% } %>
+          </div>
+
+          <div style="margin-top:0.8em;">
+            <a href="/houses/<%= house.id %>/share" class="action-btn">Manage Shared Characters</a>
+            <% if (house.fcId && user.fcRoles && user.fcRoles[house.fcId] && ['owner','admin'].includes(user.fcRoles[house.fcId])) { %>
+              <form method="POST" action="/houses/<%= house.id %>/delete" style="display:inline;" onsubmit="return confirm('Are you sure you want to remove this house?');">
+                <button type="submit" class="action-btn danger" style="margin-top:0.5em;">Remove</button>
+              </form>
+            <% } else if (!house.fcId) { %>
+              <form method="POST" action="/houses/<%= house.id %>/delete" style="display:inline;" onsubmit="return confirm('Are you sure you want to remove this house?');">
+                <button type="submit" class="action-btn danger" style="margin-top:0.5em;">Remove</button>
+              </form>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</body>
+</html>

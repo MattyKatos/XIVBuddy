@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Plot - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <div class="card plot-card" style="margin-bottom:1.5em;text-align:center;">
+      <% let house = houses.find(h => h.id === plot.HouseId); %>
+      <strong style="font-size:1.1em;display:block;">
+        <%= house ? house.district + ' Ward ' + house.ward + ' Plot ' + house.plot : 'Unknown' %>
+      </strong>
+      <div class="plot-card-badge type" style="display:block;">Type: <%= plot.type %></div>
+      <div class="plot-card-badge uid" style="display:block;">UID: <%= plot.uid.slice(-12) %></div>
+      <div class="plot-card-badge beds" style="display:block;">Beds: <%= plot.beds %></div>
+    </div>
+    <h1>Edit Plot</h1>
+    <form method="POST" action="/plots/<%= plot.id %>/edit" style="max-width:400px;margin:0 auto;text-align:center;">
+    <label>House:<br>
+      <select name="houseId" required>
+        <% houses.forEach(function(house) { %>
+          <option value="<%= house.id %>" <%= house.id === plot.HouseId ? 'selected' : '' %>><%= house.district %> Ward <%= house.ward %> Plot <%= house.plot %></option>
+        <% }); %>
+      </select>
+    </label><br><br>
+    <label>Plot Type:<br>
+      <select name="type" id="plotType" required onchange="updateBeds()">
+        <option value="">-- Select Type --</option>
+        <option value="Deluxe Garden Patch" <%= plot.type === 'Deluxe Garden Patch' ? 'selected' : '' %>>Deluxe Garden Patch (8 beds)</option>
+        <option value="Oblong Garden Patch" <%= plot.type === 'Oblong Garden Patch' ? 'selected' : '' %>>Oblong Garden Patch (6 beds)</option>
+        <option value="Round Garden Patch" <%= plot.type === 'Round Garden Patch' ? 'selected' : '' %>>Round Garden Patch (4 beds)</option>
+        <option value="Flowerpot" <%= plot.type === 'Flowerpot' ? 'selected' : '' %>>Flowerpot (1 bed)</option>
+      </select>
+    </label><br><br>
+    <label>Beds:<br>
+      <input type="number" name="beds" id="bedsInput" value="<%= plot.beds %>" readonly required>
+    </label><br><br>
+    <button type="submit" class="action-btn">Save Changes</button>
+  </form>
+  <div style="text-align:center;margin-top:1em;">
+    <a href="/plots" class="action-btn">Back to Plots</a>
+  </div>
+  <script>
+    function updateBeds() {
+      var type = document.getElementById('plotType').value;
+      var beds = 0;
+      if (type === 'Deluxe Garden Patch') beds = 8;
+      else if (type === 'Oblong Garden Patch') beds = 6;
+      else if (type === 'Round Garden Patch') beds = 4;
+      else if (type === 'Flowerpot') beds = 1;
+      document.getElementById('bedsInput').value = beds;
+    }
+  </script>
+  <a href="/plots">Back to Plots</a>
+</body>
+</html>
+

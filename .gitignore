@@ -1,0 +1,59 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables and secrets
+.env
+*.env
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# Database (local/test)
+*.sqlite
+*.sqlite3
+db.sqlite*
+
+# Build artifacts
+/dist/
+/build/
+
+# VSCode and IDE files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Misc
+coverage/
+
+# XIVBuddy specific
+config.json
+secrets.json
+*.bak
+
+# Ignore uploads or temp
+uploads/
+tmp/
+
+# Ignore SSL certs
+*.pem
+*.crt
+*.key
+certs/
+
+# Ignore MySQL data (if mapped)
+mysql/

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register New House - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <h1>Register New Housing</h1>
+<div class="card house-card" style="margin-bottom:1.5em;text-align:center;">
+  <strong style="font-size:1.1em;display:block;">Housing Type</strong>
+</div>
+<form method="POST" action="/houses/new" style="max-width:500px;margin:0 auto;text-align:center;">
+  <label>Type:<br>
+    <select name="housingType" id="housingType" required onchange="updateHousingType()">
+      <option value="">-- Select --</option>
+      <option value="house">Personal House</option>
+      <option value="fc_house">FC House</option>
+      <option value="apartment">Apartment</option>
+      <option value="fc_room">FC Room (Private Chambers)</option>
+    </select>
+  </label><br><br>
+
+  <div id="houseSection" style="display:none">
+    <label>Size:<br>
+      <select name="houseSize">
+        <option value="Large">Large</option>
+        <option value="Medium">Medium</option>
+        <option value="Small">Small</option>
+      </select>
+    </label><br><br>
+    <label>District:<br>
+      <select name="district">
+        <option value="">-- Select District --</option>
+        <option value="Mist">Mist (Limsa Lominsa)</option>
+        <option value="The Lavender Beds">The Lavender Beds (Gridania)</option>
+        <option value="The Goblet">The Goblet (Ul'dah)</option>
+        <option value="Shirogane">Shirogane (Kugane)</option>
+        <option value="Empyreum">Empyreum (Ishgard)</option>
+      </select>
+    </label><br><br>
+    <label>Ward:<br>
+      <input type="number" name="ward" min="1">
+    </label><br><br>
+    <label>Plot Number:<br>
+      <input type="number" name="plot" min="1">
+    </label><br><br>
+    <label>Character Owner:<br>
+      <select name="characterId">
+        <option value="">-- Select Character --</option>
+        <% houseCharacters.forEach(function(character) { %>
+          <option value="<%= character.id %>"><%= character.name %></option>
+        <% }); %>
+      </select>
+      <div style="font-size:0.9em;color:#888;">(Each character may only own 1 house)</div>
+    </label><br><br>
+  </div>
+
+  <div id="fcHouseSection" style="display:none">
+    <label>Size:<br>
+      <select name="houseSize">
+        <option value="Large">Large</option>
+        <option value="Medium">Medium</option>
+        <option value="Small">Small</option>
+      </select>
+    </label><br><br>
+    <label>District:<br>
+      <select name="district">
+        <option value="">-- Select District --</option>
+        <option value="Mist">Mist (Limsa Lominsa)</option>
+        <option value="The Lavender Beds">The Lavender Beds (Gridania)</option>
+        <option value="The Goblet">The Goblet (Ul'dah)</option>
+        <option value="Shirogane">Shirogane (Kugane)</option>
+        <option value="Empyreum">Empyreum (Ishgard)</option>
+      </select>
+    </label><br><br>
+    <label>Ward:<br>
+      <input type="number" name="ward" min="1">
+    </label><br><br>
+    <label>Plot Number:<br>
+      <input type="number" name="plot" min="1">
+    </label><br><br>
+    <label>FC Owner:<br>
+      <select name="fcId">
+        <option value="">-- Select FC --</option>
+        <% fcs.forEach(function(fc) { %>
+          <option value="<%= fc.id %>"><%= fc.name %><% if (fc.tag) { %> [<%= fc.tag %>] <% } %></option>
+        <% }); %>
+      </select>
+      <div style="font-size:0.9em;color:#888;">(Each FC may only own 1 house)</div>
+    </label><br><br>
+  </div>
+
+  <div id="apartmentSection" style="display:none">
+    <label>District:<br>
+      <select name="district">
+        <option value="">-- Select District --</option>
+        <option value="Mist">Mist (Limsa Lominsa)</option>
+        <option value="The Lavender Beds">The Lavender Beds (Gridania)</option>
+        <option value="The Goblet">The Goblet (Ul'dah)</option>
+        <option value="Shirogane">Shirogane (Kugane)</option>
+        <option value="Empyreum">Empyreum (Ishgard)</option>
+      </select>
+    </label><br><br>
+    <label>Ward:<br>
+      <input type="number" name="ward" min="1">
+    </label><br><br>
+    <label>Room Number:<br>
+      <input type="number" name="plot" min="1">
+    </label><br><br>
+    <label>Character Owner:<br>
+      <select name="characterId">
+        <option value="">-- Select Character --</option>
+        <% apartmentCharacters.forEach(function(character) { %>
+          <option value="<%= character.id %>"><%= character.name %></option>
+        <% }); %>
+      </select>
+      <div style="font-size:0.9em;color:#888;">(Each character may only own 1 apartment)</div>
+    </label><br><br>
+  </div>
+
+  <div id="fcRoomSection" style="display:none">
+    <label>Room Number:<br>
+      <input type="number" name="room" min="1">
+    </label><br><br>
+    <label>Character Owner:<br>
+      <select name="characterId">
+        <option value="">-- Select Character --</option>
+        <% fcRoomCharacters.forEach(function(character) { %>
+          <option value="<%= character.id %>"><%= character.name %></option>
+        <% }); %>
+      </select>
+    </label><br><br>
+    <label>FC:<br>
+      <select name="fcId">
+        <option value="">-- Select FC --</option>
+        <% fcRoomFCs.forEach(function(fc) { %>
+          <option value="<%= fc.id %>"><%= fc.name %><% if (fc.tag) { %> [<%= fc.tag %>] <% } %></option>
+        <% }); %>
+      </select>
+      <div style="font-size:0.9em;color:#888;">(Each character may only have 1 FC room per FC, and must be in the FC)</div>
+    </label><br><br>
+  </div>
+
+  <button type="submit" class="action-btn">Register</button>
+</form>
+<script>
+function updateHousingType() {
+  var val = document.getElementById('housingType').value;
+  // Hide and disable all sections
+  ['houseSection', 'fcHouseSection', 'apartmentSection', 'fcRoomSection'].forEach(function(id) {
+    var sec = document.getElementById(id);
+    if (sec) {
+      sec.style.display = 'none';
+      Array.from(sec.querySelectorAll('input, select')).forEach(function(el) {
+        el.disabled = true;
+      });
+    }
+  });
+  // Show and enable the selected section
+  var showId = {
+    house: 'houseSection',
+    fc_house: 'fcHouseSection',
+    apartment: 'apartmentSection',
+    fc_room: 'fcRoomSection'
+  }[val];
+  if (showId) {
+    var sec = document.getElementById(showId);
+    if (sec) {
+      sec.style.display = 'block';
+      Array.from(sec.querySelectorAll('input, select')).forEach(function(el) {
+        el.disabled = false;
+      });
+    }
+  }
+}
+window.onload = updateHousingType;
+</script>
+  </form>
+  <div style="text-align:center;margin-top:1em;">
+    <a href="/houses" class="action-btn">Back to Houses</a>
+  </div>
+  </div>
+  <script>
+    // On page load, keep the correct select visible if form is reloaded
+    window.onload = function() {
+      var ownerType = document.querySelector('select[name=ownerType]').value;
+      document.getElementById('fcSelect').style.display = ownerType === 'fc' ? 'inline' : 'none';
+      document.getElementById('charSelect').style.display = ownerType === 'character' ? 'inline' : 'none';
+    };
+  </script>
+</body>
+</html>
+

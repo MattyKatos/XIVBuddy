@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Free Companies - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <h1>Your Free Companies</h1>
+    <a href="/dashboard">Back to Dashboard</a> | <a href="/fcs/new">Register New Free Company</a>
+    <hr>
+  <% if (fcs.length === 0) { %>
+    <p>You have not registered any Free Companies yet.</p>
+  <% } else { %>
+    <div class="fc-cards">
+      <% fcs.forEach(function(fc) { %>
+        <div class="card fc-card" style="text-align:center;margin-bottom:1em;">
+          <strong style="font-size:1.1em;display:block;"><%= fc.name %></strong>
+          <% if (fc.tag) { %>
+            <div class="fc-card-badge fc-tag" style="display:block;font-weight:bold;margin:0.2em 0;">[<%= fc.tag %>]</div>
+          <% } %>
+          <% if (fc.lodestoneId) { %>
+            <div class="fc-card-badge lodestone" style="display:block;">Lodestone: <%= fc.lodestoneId %></div>
+          <% } %>
+          <% if (fcRoles && fcRoles[fc.id] === 'owner') { %>
+            <div style="margin-top:0.8em;">
+              <a href="/fcs/<%= fc.id %>/manage" class="action-btn">Manage</a>
+            </div>
+          <% } else if (!fcRoles || !fcRoles[fc.id]) { %>
+            <form method="POST" action="/fcs/<%= fc.id %>/join" style="margin-top:0.8em;">
+              <button type="submit" class="action-btn">Join FC</button>
+            </form>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</body>
+</html>

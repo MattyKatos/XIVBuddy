@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Discord Servers - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <h1>Discord Servers & Channels</h1>
+    <button class="action-btn" onclick="location.href='/dashboard'">Back to Dashboard</button>
+    <hr>
+    <% if (servers.length === 0) { %>
+      <p>No servers registered yet.</p>
+    <% } else { %>
+      <% servers.forEach(function(server) { %>
+        <div class="card">
+          <h2><%= server.name %> <span style="font-size:0.7em;color:#888;">[ID: <%= server.discordId %>]</span> <span style="font-size:0.8em;color:#555;">(<%= server.memberCount %> members)</span>
+            <% if (server.isCurrentUserAdmin) { %>
+              <span style="background:#228b22;color:#fff;font-size:0.8em;padding:2px 8px;border-radius:5px;margin-left:10px;vertical-align:middle;">Admin</span>
+            <% } %>
+          </h2>
+          <% if (server.Channels && server.Channels.length > 0) { %>
+            <ul>
+              <% server.Channels.forEach(function(channel) { %>
+                <li>
+                  <strong>#<%= channel.name %></strong>
+                  <span style="font-size:0.85em;color:#aaa;">[ID: <%= channel.discordId %>]</span>
+                  <% if (server.isCurrentUserAdmin) { %>
+                    <form method="POST" action="/channels/<%= channel.id %>/delete" style="display:inline;">
+                      <button type="submit" class="action-btn" style="background:#c0392b;color:#fff;margin-left:10px;" onclick="return confirm('Are you sure you want to delete this channel?')">Delete</button>
+                    </form>
+                  <% } %>
+                </li>
+              <% }); %>
+            </ul>
+          <% } else { %>
+            <p style="color:#888">No channels registered for this server.</p>
+          <% } %>
+        </div>
+      <% }); %>
+    <% } %>
+  </div>
+</body>
+</html>

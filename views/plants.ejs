@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Farming Plots - XIVBuddy</title>
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <h1>Farming Plots</h1>
+  <a href="/dashboard">Back to Dashboard</a> | <a href="/plants/new">Register New Farming Plot</a>
+  <hr>
+  <% if (plants.length === 0) { %>
+    <p>No farming plots registered yet.</p>
+  <% } else { %>
+    <ul>
+      <% plants.forEach(function(plant) { %>
+        <li>
+          <strong><%= plant.name %></strong>
+          <br>
+          House: 
+          <% let house = houses.find(h => h.id === plant.HouseId); %>
+          <%= house ? house.district + ' Ward ' + house.ward + ' Plot ' + house.plot : 'Unknown' %>
+          <br>
+          Planted At: <%= plant.plantedAt ? plant.plantedAt.toLocaleString() : 'N/A' %><br>
+          Harvested At: <%= plant.harvestedAt ? plant.harvestedAt.toLocaleString() : 'N/A' %>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Characters - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body style="background:#181A20;min-height:100vh;">
+  <%- include('partials/navbar.ejs', { user: user || {} }) %>
+  <div style="max-width:900px;margin:2.5em auto 0 auto;">
+    <h1 style="text-align:center;font-size:2em;color:#fff;margin-bottom:0.7em;letter-spacing:0.01em;">Your FFXIV Characters</h1>
+    <div style="display:flex;justify-content:center;gap:1.2em;margin-bottom:1.7em;">
+      <a href="/dashboard" class="action-btn" style="background:#23272f;color:#fff;">Back to Dashboard</a>
+      <a href="/characters/new" class="action-btn" style="background:#5865F2;color:#fff;">Register New Character</a>
+    </div>
+    <% if (characters.length === 0) { %>
+      <div style="text-align:center;color:#bbb;font-size:1.18em;margin:2.5em 0 2.5em 0;">You have not registered any characters yet.</div>
+    <% } else { %>
+      <div class="dashboard-grid" style="gap:2em 1.5em;">
+        <% characters.forEach(function(character) { %>
+          <div class="dashboard-card card character-card" style="min-width:230px;max-width:270px;margin:0 auto;">
+            <div class="character-card-main" style="text-align:center;padding:0.7em 0 0.2em 0;">
+              <strong style="font-size:1.25em;display:block;color:#fff;"><%= character.name %></strong>
+              <% if (character.FC && character.FC.name) { %>
+                <div class="character-card-badge fc-tag" style="display:block;margin:0.25em 0 0.22em 0;font-weight:bold;color:#9cf;">&lt;&lt;<%= character.FC.name %>&gt;&gt;</div>
+              <% } %>
+              <% if (character.world) { %>
+                <div class="character-card-badge world" style="display:block;color:#bbb;">
+                  <%= character.world %><% if (character.datacenter) { %> (<%= character.datacenter %>)<% } %>
+                </div>
+              <% } %>
+              <% if (character.lodestoneId) { %>
+                <div class="character-card-badge lodestone" style="display:block;color:#aaa;font-size:0.98em;">Lodestone: <%= character.lodestoneId %></div>
+              <% } %>
+            </div>
+            <div class="character-card-actions" style="display:flex;gap:0.7em;justify-content:center;margin-top:1.1em;">
+              <a href="/characters/<%= character.id %>/edit" class="action-btn" style="background:#23272f;color:#fff;">Edit</a>
+              <form action="/characters/<%= character.id %>/delete" method="POST" style="display:inline;">
+                <button type="submit" class="action-btn remove-btn" style="background:#e74c3c;color:#fff;" onclick="return confirm('Remove this character?')">Remove</button>
+              </form>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

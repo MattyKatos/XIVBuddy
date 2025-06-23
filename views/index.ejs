@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>XIVBuddy - Home</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body style="background:#181A20; min-height:100vh;">
+  <%- include('partials/navbar.ejs', { user: user || {} }) %>
+  <div style="display:flex; justify-content:center; align-items:center; min-height:80vh;">
+    <div class="card preview-card" style="padding:2.5em 2.5em 2em 2.5em; max-width:410px; width:100%; text-align:center; box-shadow:0 4px 24px #0002;">
+      <h1 style="margin-bottom:0.7em; font-size:2em; color:#fff; letter-spacing:0.01em;">Welcome to <span style="color:#5865F2;">XIVBuddy</span></h1>
+      <% if (user) { %>
+        <div style="margin-bottom:1.1em; color:#fff;">Logged in as <b><%= user.username %></b> (<%= user.id %>)</div>
+        <a href="/dashboard" class="action-btn" style="margin-right:0.5em;">Go to Dashboard</a>
+        <a href="/logout" class="action-btn" style="background:#e74c3c;color:#fff;">Logout</a>
+      <% } else { %>
+        <br><br>
+        <a href="/auth/discord" class="action-btn" style="background:#5865F2;color:#fff;font-size:1.2em;padding:1.15em 2.8em;border-radius:0.7em;box-shadow:0 2px 8px #0003;margin-top:1.4em;margin-bottom:1.3em;">Login with Discord</a>
+        <br><br>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>

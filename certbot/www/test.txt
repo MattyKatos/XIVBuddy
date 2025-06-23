@@ -1,0 +1,1 @@
+If you can read this file at http://xivbuddy.katos.xyz/.well-known/acme-challenge/test.txt from your browser, your nginx and Docker setup is correct for Let's Encrypt webroot validation.

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Free Company - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <div class="card fc-card" style="margin-bottom:1.5em;text-align:center;">
+      <strong style="font-size:1.1em;display:block;"><%= fc.name %></strong>
+      <% if(fc.tag){ %><div class="fc-card-badge fc-tag" style="display:block;font-weight:bold;margin:0.2em 0;">[<%= fc.tag %>]</div><% } %>
+      <% if(fc.lodestoneId){ %><div class="fc-card-badge lodestone" style="display:block;">Lodestone: <%= fc.lodestoneId %></div><% } %>
+    </div>
+    <h1>Manage Free Company: <%= fc.name %> <% if(fc.tag){ %>[<%= fc.tag %>]<% } %></h1>
+    <hr>
+  <h2>Current Users</h2>
+  <ul>
+    <% fcUsers.forEach(function(fcu) { %>
+      <li>
+        <%= fcu.User.username %> (<%= fcu.User.discordId %>) - <%= fcu.role %>
+        <% if (canManage && fcu.role !== 'owner') { %>
+          <form method="POST" action="/fcs/<%= fc.id %>/remove_user" style="display:inline">
+  <button type="submit" class="action-btn remove-btn">Remove</button>
+            <input type="hidden" name="userId" value="<%= fcu.User.id %>">
+            <button type="submit">Remove</button>
+          </form>
+        <% } %>
+      </li>
+    <% }); %>
+  </ul>
+  <hr>
+  <h2>Add User by Discord ID</h2>
+  <form method="POST" action="/fcs/<%= fc.id %>/add_user" style="text-align:center;max-width:400px;margin:0 auto;">
+    <input type="text" name="discordId" placeholder="Discord User ID" required>
+    <select name="role">
+      <option value="member">Member</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Add User</button>
+  </form>
+  <hr>
+  <h2>Servers With Access</h2>
+  <ul>
+    <% if (fcServers && fcServers.length > 0) { %>
+      <% fcServers.forEach(function(server) { %>
+        <li>
+          <%= server.name || 'Unnamed Server' %> (<%= server.discordId %>)
+          <% if (canManage) { %>
+            <form method="POST" action="/fcs/<%= fc.id %>/remove_server" style="display:inline">
+  <button type="submit" class="action-btn remove-btn">Remove</button>
+              <input type="hidden" name="serverId" value="<%= server.id %>">
+              <button type="submit">Remove</button>
+            </form>
+          <% } %>
+        </li>
+      <% }); %>
+    <% } else { %>
+      <li>No servers have access to this FC.</li>
+    <% } %>
+  </ul>
+  <% if (canManage && userServers && userServers.length > 0) { %>
+    <h3>Add Server Access</h3>
+    <form method="POST" action="/fcs/<%= fc.id %>/add_server" style="text-align:center;max-width:400px;margin:0 auto;">
+      <select name="serverId" required>
+        <option value="">Select a server…</option>
+        <% userServers.forEach(function(server) { %>
+          <option value="<%= server.id %>"><%= server.name %> (<%= server.discordId %>)</option>
+        <% }); %>
+      </select>
+      <button type="submit">Add Server</button>
+    </form>
+  <% } %>
+  <hr>
+  <div style="text-align:center;margin-top:1em;">
+    <a href="/fcs" class="action-btn">Back to Free Companies</a>
+  </div>
+  </div>
+</body>
+</html>

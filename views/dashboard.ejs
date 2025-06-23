@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="dashboard-full">
+  <header class="dashboard-header" style="display: flex; justify-content: center; align-items: center; min-height: 120px;">
+  <div class="dashboard-user" style="display: flex; align-items: center; gap: 1.2em; justify-content: center;">
+    <% let defaultIndex = (user.discriminator ? parseInt(user.discriminator) % 5 : 0); %>
+    <img src="<%= user.avatar 
+      ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`
+      : `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png` %>" alt="User" class="dashboard-user-avatar" />
+    <div style="text-align:center;">
+      <h2 style="margin-bottom:0.3em;">Welcome, <%= user.username %>!</h2>
+      <div class="dashboard-user-id">Discord ID: <%= user.discordId %></div>
+    </div>
+  </div>
+</header>
+    <div class="dashboard-section">
+  <div class="dashboard-section-title">Characters & Free Companies</div>
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <div class="dashboard-card-icon">🧑‍🎤</div>
+      <div style="font-size:1.1em;font-weight:bold;">Characters</div>
+      <div style="font-size:1.35em;margin:0.18em 0 0.1em 0;"><%= stats.characters %></div>
+      <a href="/characters" class="action-btn">Manage Characters</a>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card-icon">🏰</div>
+      <div style="font-size:1.1em;font-weight:bold;">Free Companies</div>
+      <div style="font-size:1.35em;margin:0.18em 0 0.1em 0;"><%= stats.fcs %></div>
+      <a href="/fcs" class="action-btn">Manage Free Companies</a>
+    </div>
+  </div>
+</div>
+<div class="dashboard-section">
+  <div class="dashboard-section-title">Housing</div>
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <div class="dashboard-card-icon">🏠</div>
+      <div style="font-size:1.1em;font-weight:bold;">Houses</div>
+      <div style="font-size:1.35em;margin:0.18em 0 0.1em 0;"><%= stats.houses %></div>
+      <a href="/houses" class="action-btn">Manage Houses</a>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card-icon">🌻</div>
+      <div style="font-size:1.1em;font-weight:bold;">Plots</div>
+      <div style="font-size:1.35em;margin:0.18em 0 0.1em 0;"><%= stats.plots %></div>
+      <a href="/plots" class="action-btn">Manage Plots</a>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card-icon">🌱</div>
+      <div style="font-size:1.1em;font-weight:bold;">Crops</div>
+      <div style="font-size:1.35em;margin:0.18em 0 0.1em 0;"><%= stats.crops %></div>
+      <a href="/crops" class="action-btn">Manage Crops</a>
+    </div>
+  </div>
+</div>
+<div class="dashboard-section">
+  <div class="dashboard-section-title">Discord & Alerts</div>
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <div class="dashboard-card-icon">💬</div>
+      <div style="font-size:1.1em;font-weight:bold;">Discord</div>
+      <div style="font-size:1.25em;margin:0.18em 0 0.1em 0;">
+        <%= stats.discordServers %> Servers | <%= stats.discordChannels %> Channels
+      </div>
+      <div style="display:flex; justify-content:center; gap:0.7em; margin-top:0.5em;">
+        <a href="/servers" class="action-btn">View Servers</a>
+        <a href="https://discord.com/oauth2/authorize?client_id=<%= discordClientId %>" class="action-btn" style="background:#5865F2;color:#fff;" target="_blank">Add Bot to Server</a>
+      </div>
+    </div>
+    <div class="dashboard-card" style="text-align:center;">
+      <div class="dashboard-card-icon">⏰</div>
+      <div style="font-size:1.1em;font-weight:bold;">Alerts</div>
+      <div style="font-size:1.25em;margin:0.18em 0 0.1em 0;">
+        <%= stats.alerts %> My Alerts
+        <span style="font-size:0.65em; color:#888; display:block; margin-top:0.1em;">
+          <%= stats.adminServerAlerts %> Active in Admin Servers
+        </span>
+      </div>
+      <div style="display:flex; justify-content:center; margin-top:0.5em;">
+        <a href="/alerts" class="action-btn">Manage Alerts</a>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</body>
+</body>
+</html>

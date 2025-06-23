@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Farming Plots - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <h1>Farming Plots</h1>
+    <a href="/dashboard">Back to Dashboard</a>
+    <hr>
+    <% if (houses.length === 0) { %>
+      <p>No houses registered yet.</p>
+    <% } else { %>
+      <div class="house-cards">
+        <% houses.forEach(function(house) { %>
+          <div class="card house-card" style="text-align:center;margin-bottom:2em;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5em;gap:1em;">
+              <span style="font-size:1.1em;font-weight:bold;text-align:left;">
+                [
+                <% if (house.type === 'FC Room') { %>FC ROOM<% } 
+                   else if (house.type === 'Apartment') { %>Apartment<% } 
+                   else if (['Small','Medium','Large'].includes(house.type) && house.OwningFC) { %>FC House<% } 
+                   else if (['Small','Medium','Large'].includes(house.type)) { %>Personal House<% } 
+                   else { %><%= house.type %><% } %>
+                ]
+                <% if (house.type === 'FC Room') { %>
+                  <%= house.OwningCharacter ? house.OwningCharacter.name : (house.OwningFC ? house.OwningFC.name : '') %> - Room <%= house.plot %>
+                <% } else if (house.type === 'Apartment') { %>
+                  <%= house.district %> - Ward <%= house.ward %>, Room <%= house.plot %>
+                <% } else if (['Small','Medium','Large'].includes(house.type) && house.OwningFC) { %>
+                  <%= house.OwningFC ? house.OwningFC.name : '' %> <% if (house.OwningFC && house.OwningFC.tag) { %>[<%= house.OwningFC.tag %>]<% } %> - <%= house.district %> - Plot <%= house.plot %>
+                <% } else if (['Small','Medium','Large'].includes(house.type)) { %>
+                  <%= house.OwningCharacter ? house.OwningCharacter.name : '' %> - <%= house.district %> - Ward <%= house.ward %>, Plot <%= house.plot %>
+                <% } else { %>
+                  <%= house.district %> - Ward <%= house.ward %>, Plot <%= house.plot %>
+                <% } %>
+              </span>
+              <a href="/plots/new?houseId=<%= house.id %>" class="action-btn" title="Add Plot" style="font-size:1.3em;padding:0.3em 0.7em;">+</a>
+            </div>
+            <% let housePlots = plots.filter(function(p) { return p.HouseId === house.id; }); %>
+            <% if (housePlots.length === 0) { %>
+              <div style="margin-top:1em;color:#888;">No plots registered for this house.</div>
+            <% } else { %>
+              <div class="plot-cards" style="margin-top:1em;">
+                <% housePlots.forEach(function(plot) { %>
+                  <div class="card plot-card" style="display:inline-block;text-align:center;margin:0 0.5em 1em 0.5em;min-width:200px;vertical-align:top;">
+                    <div class="plot-card-badge type" style="display:block;">Type: <%= plot.type %></div>
+                    <div class="plot-card-badge uid" style="display:block;">UID: <%= plot.uid.slice(-12) %></div>
+                    <div class="plot-card-badge beds" style="display:block;">Beds: <%= plot.beds %></div>
+                    <div style="margin-top:0.8em;display:flex;gap:0.5em;justify-content:center;">
+                      <% if (house.fcId && user.fcRoles && user.fcRoles[house.fcId] && ['owner','admin'].includes(user.fcRoles[house.fcId])) { %>
+                        <a href="/plots/<%= plot.id %>/delete" class="action-btn remove-btn" onclick="return confirm('Are you sure you want to delete this plot?');">Remove</a>
+                      <% } else if (!house.fcId) { %>
+                        <a href="/plots/<%= plot.id %>/delete" class="action-btn remove-btn" onclick="return confirm('Are you sure you want to delete this plot?');">Remove</a>
+                      <% } %>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+</body>
+</html>

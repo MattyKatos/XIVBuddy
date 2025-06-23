@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register New Character - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body style="background:#181A20;min-height:100vh;">
+  <%- include('partials/navbar.ejs', { user: user || {} }) %>
+  <div style="max-width:430px;margin:2.5em auto 0 auto;">
+    <h1 style="text-align:center;font-size:1.8em;color:#fff;margin-bottom:0.7em;letter-spacing:0.01em;">Register New FFXIV Character</h1>
+    <div class="dashboard-card card character-card" style="margin-bottom:1.5em;">
+      <div class="character-card-main" style="text-align:center;padding:0.7em 0 0.2em 0;">
+        <strong style="font-size:1.25em;display:block;color:#fff;">Character Name</strong>
+        <div class="character-card-badge fc-tag" style="display:block;margin:0.25em 0 0.22em 0;font-weight:bold;color:#9cf;">&lt;&lt;FC Name&gt;&gt;</div>
+        <div class="character-card-badge world" style="display:block;color:#bbb;">World (Datacenter)</div>
+        <div class="character-card-badge lodestone" style="display:block;color:#aaa;font-size:0.98em;">Lodestone: ...</div>
+      </div>
+    </div>
+    <form method="POST" action="/characters/new" style="max-width:340px;margin:0 auto;text-align:center;">
+      <label style="color:#bbb;font-size:1.08em;">Lodestone ID:<br>
+        <input type="text" name="lodestoneId" required style="width:100%;padding:0.7em 1em;margin-top:0.4em;background:#23272f;color:#fff;border:1px solid #333;border-radius:0.5em;">
+      </label><br><br>
+      <% if (fcs && fcs.length > 0) { %>
+        <label style="color:#bbb;font-size:1.08em;">Free Company:<br>
+          <select name="fcId" style="width:100%;padding:0.7em 1em;margin-top:0.4em;background:#23272f;color:#fff;border:1px solid #333;border-radius:0.5em;">
+            <option value="">-- None --</option>
+            <% fcs.forEach(function(fc) { %>
+              <option value="<%= fc.id %>"><%= fc.name %><% if (fc.tag) { %> [<%= fc.tag %>] <% } %></option>
+            <% }); %>
+          </select>
+        </label><br><br>
+      <% } %>
+      <button type="submit" class="action-btn" style="background:#5865F2;color:#fff;font-size:1.1em;padding:0.9em 2em;border-radius:0.7em;box-shadow:0 2px 8px #0003;margin-top:1.1em;">Register Character</button>
+    </form>
+    <div style="text-align:center;margin-top:1.45em;">
+      <a href="/characters" class="action-btn" style="background:#23272f;color:#fff;">Back to Characters</a>
+    </div>
+  </div>
+</body>
+</html>

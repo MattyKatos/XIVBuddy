@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Shared Characters for House</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+
+    <div class="card house-card" style="margin-bottom:1.5em;text-align:center;">
+      <strong style="font-size:1.1em;display:block;"><%= house.district %></strong>
+      <div class="house-card-badge ward" style="display:block;">Ward: <%= house.ward %></div>
+      <div class="house-card-badge plot" style="display:block;">Plot: <%= house.plot %></div>
+      <% if (house.OwningFC) { %>
+        <div class="house-card-badge fc-owner" style="display:block;margin:0.2em 0;">FC: <%= house.OwningFC.name %> <% if (house.OwningFC.tag) { %>[<%= house.OwningFC.tag %>]<% } %></div>
+      <% } %>
+      <% if (house.OwningCharacter) { %>
+        <div class="house-card-badge char-owner" style="display:block;margin:0.2em 0;">Personal: <%= house.OwningCharacter.name %></div>
+      <% } %>
+    </div>
+    <h1>Manage Shared Characters for House</h1>
+    <hr>
+  <h2>Current Shared Characters</h2>
+    <ul style="text-align:center;list-style:none;padding:0;">
+    <% if (house.OwningCharacter) { %>
+      <li><strong>Owner:</strong> <%= house.OwningCharacter.name %> (<%= house.OwningCharacter.world %>)</li>
+    <% } %>
+    <% if (shared.length === 0) { %>
+      <li>No characters currently share this house.</li>
+    <% } else { %>
+      <% shared.forEach(function(character) { %>
+        <% if (!house.OwningCharacter || character.id !== house.OwningCharacter.id) { %>
+          <li style="margin-bottom:0.5em;">
+            <%= character.name %> (<%= character.world %>)
+            <form method="POST" action="/houses/<%= house.id %>/share/remove" style="display:inline">
+              <input type="hidden" name="characterId" value="<%= character.id %>">
+              <button type="submit" class="action-btn remove-btn">Remove</button>
+            </form>
+          </li>
+        <% } %>
+      <% }); %>
+    <% } %>
+  </ul>
+  <hr>
+  <h2>Add Character to Share</h2>
+  <form method="POST" action="/houses/<%= house.id %>/share/add" style="text-align:center;max-width:400px;margin:0 auto;">
+    <select name="characterId" required>
+      <option value="">-- Select Character --</option>
+      <% userCharacters.forEach(function(character) { %>
+        <% if (
+          (!shared.some(s => s.id === character.id)) &&
+          (!house.OwningCharacter || character.id !== house.OwningCharacter.id)
+        ) { %>
+          <option value="<%= character.id %>"><%= character.name %> (<%= character.world %>)</option>
+        <% } %>
+      <% }); %>
+    </select>
+    <button type="submit" class="action-btn">Add</button>
+  </form>
+    <div style="text-align:center;margin-top:1em;">
+      <a href="/houses" class="action-btn">Back to Houses</a>
+    </div>
+  </div>
+</body>
+</html>

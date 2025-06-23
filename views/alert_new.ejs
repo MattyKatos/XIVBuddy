@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Alert - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container" style="max-width:550px;margin:2em auto 0 auto;">
+    <h1>Add Plot Alert</h1>
+    <form method="POST" action="/alerts/new">
+      <div class="card">
+        <h2>Select House (Optional)</h2>
+        <% if (houses.length === 0) { %>
+          <p>You do not have any houses assigned to you.</p>
+        <% } else { %>
+          <select name="houseId" id="houseId">
+            <option value="">-- Select House --</option>
+            <% houses.forEach(function(house) { %>
+              <option value="<%= house.id %>">
+                <%= house.district %> Ward <%= house.ward %> Plot <%= house.plot %>
+              </option>
+            <% }); %>
+          </select>
+        <% } %>
+        <p style="font-size:0.95em;color:#666;margin-top:0.5em;">You may create an alert for an entire house <b>or</b> for a single plot. If you select a house, all its plots will have alerts created. Selecting a house disables plot selection and vice versa.</p>
+      </div>
+      <div class="card">
+        <h2>Select Plot (Optional)</h2>
+        <% if (plots.length === 0) { %>
+          <p>You do not have any plots assigned to you.</p>
+        <% } else { %>
+          <select name="plotId" id="plotId">
+            <option value="">-- Select Plot --</option>
+            <% plots.forEach(function(plot) { %>
+              <option value="<%= plot.id %>">
+                <%= plot.type %> (House: <%= plot.House ? plot.House.district + ' Ward ' + plot.House.ward + ' Plot ' + plot.House.plot : 'N/A' %>)
+              </option>
+            <% }); %>
+          </select>
+        <% } %>
+      </div>
+      <script>
+        const houseSelect = document.getElementById('houseId');
+        const plotSelect = document.getElementById('plotId');
+        if (houseSelect && plotSelect) {
+          houseSelect.addEventListener('change', function() {
+            if (this.value) {
+              plotSelect.disabled = true;
+            } else {
+              plotSelect.disabled = false;
+            }
+          });
+          plotSelect.addEventListener('change', function() {
+            if (this.value) {
+              houseSelect.disabled = true;
+            } else {
+              houseSelect.disabled = false;
+            }
+          });
+        }
+      </script>
+      <div class="card">
+        <h2>Select Discord Channel</h2>
+        <% if (adminChannels.length === 0) { %>
+          <p>You are not an admin in any Discord server channels.</p>
+        <% } else { %>
+          <select name="channelId" required>
+            <option value="">-- Select Channel --</option>
+            <% adminChannels.forEach(function(chan) { %>
+              <option value="<%= chan.id %>">
+                <%= chan.Server ? chan.Server.name + ' - #' + chan.name : chan.name %>
+              </option>
+            <% }); %>
+          </select>
+        <% } %>
+      </div>
+      <div style="margin-top:1em;text-align:center;">
+        <button type="submit" class="action-btn">Add Alert</button>
+        <a href="/alerts" class="action-btn" style="margin-left:1em;">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

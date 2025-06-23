@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Plant a Crop - XIVBuddy</title>
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <h1>Plant a Crop</h1>
+  <form method="POST" action="/crops/new">
+    <label>Plot:<br>
+      <select name="plotId" id="plotSelect" required onchange="updateBeds()">
+        <option value="">-- Select Plot --</option>
+        <% plots.forEach(function(plot) { %>
+          <% let house = houses.find(h => h.id === plot.HouseId); %>
+          <option value="<%= plot.id %>" data-beds="<%= plot.beds %>">
+            <%= house ? house.district + ' Ward ' + house.ward + ' Plot ' + house.plot : 'Unknown' %> - <%= plot.type %> [<%= plot.uid.slice(-12) %>]
+          </option>
+        <% }); %>
+      </select>
+    </label><br><br>
+    <label>Bed Number:<br>
+      <select name="bedNumber" id="bedNumberSelect" required>
+        <option value="">-- Select Bed --</option>
+      </select>
+    </label><br><br>
+    <label>Crop Name:<br>
+      <input type="text" name="cropName" list="seedTypes" required autocomplete="off">
+      <datalist id="seedTypes">
+        <option value="Azeyma Rose Seed">
+        <option value="Broombush Seed">
+        <option value="Cabbage Seed">
+        <option value="Chamomile Seed">
+        <option value="Curiel Root Seed">
+        <option value="Eggplant Knight Seed">
+        <option value="Garlic Jester Seed">
+        <option value="Glazenut Seed">
+        <option value="Jute Seed">
+        <option value="Krakka Root Seed">
+        <option value="La Noscean Leek Seed">
+        <option value="Mandrake Seed">
+        <option value="Midland Cabbage Seed">
+        <option value="Mirror Apple Seed">
+        <option value="Onion Prince Seed">
+        <option value="Parsley Seed">
+        <option value="Popoto Seed">
+        <option value="Royal Kukuru Seed">
+        <option value="Shroud Tea Seed">
+        <option value="Thavnairian Onion Seed">
+        <option value="Tomato King Seed">
+        <option value="Valfruit Seed">
+        <option value="Voidrake Seed">
+        <option value="Wizard Eggplant Seed">
+        <!-- Add more as needed -->
+      </datalist>
+    </label><br><br>
+    <label><input type="checkbox" name="neverHarvest" id="neverHarvestBox" onchange="toggleFullyGrown()"> Never harvest</label><br>
+    <div id="fullyGrownDiv" style="display:none">
+      <label><input type="checkbox" name="fullyGrown"> Fully grown</label><br>
+    </div>
+    <br>
+    <button type="submit">Plant Crop</button>
+  <script>
+    function toggleFullyGrown() {
+      var never = document.getElementById('neverHarvestBox').checked;
+      document.getElementById('fullyGrownDiv').style.display = never ? '' : 'none';
+    }
+  </script>
+  </form>
+  <script>
+    function updateBeds() {
+      var plotSelect = document.getElementById('plotSelect');
+      var bedSelect = document.getElementById('bedNumberSelect');
+      var beds = 0;
+      if (plotSelect.selectedIndex > 0) {
+        beds = parseInt(plotSelect.options[plotSelect.selectedIndex].getAttribute('data-beds'));
+      }
+      bedSelect.innerHTML = '<option value="">-- Select Bed --</option>';
+      for (var i = 1; i <= beds; i++) {
+        bedSelect.innerHTML += '<option value="'+i+'">'+i+'</option>';
+      }
+    }
+  </script>
+  <a href="/crops">Back to Crops</a>
+</body>
+</html>

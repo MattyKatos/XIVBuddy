@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Planted Crops - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+  <h1>Manage Plots & Plant Crops</h1>
+  <button class="action-btn" onclick="location.href='/dashboard'">Back to Dashboard</button>
+<button class="action-btn" onclick="location.href='/crops/tend-all'">Tend All</button>
+  <hr>
+  <label for="cropSelector"><strong>Select Crop to Plant:</strong></label>
+  <input list="seedTypes" id="cropSelector" name="cropName" autocomplete="off">
+  <datalist id="seedTypes">
+    <option value="Azeyma Rose Seed">
+    <option value="Broombush Seed">
+    <option value="Cabbage Seed">
+    <option value="Chamomile Seed">
+    <option value="Curiel Root Seed">
+    <option value="Eggplant Knight Seed">
+    <option value="Garlic Jester Seed">
+    <option value="Glazenut Seed">
+    <option value="Jute Seed">
+    <option value="Krakka Root Seed">
+    <option value="La Noscean Leek Seed">
+    <option value="Mandrake Seed">
+    <option value="Midland Cabbage Seed">
+    <option value="Onion Prince Seed">
+    <option value="Royal Kukuru Seed">
+    <option value="Shroud Tea Seed">
+    <option value="Thavnairian Onion Seed">
+    <option value="Tomato King Seed">
+    <option value="Valfruit Seed">
+    <option value="Voidrake Seed">
+    <option value="Wizard Eggplant Seed">
+    <option value="Old World Fig Seed">
+    <option value="Tantalplant Seed">
+    <!-- Add more as needed -->
+  </datalist>
+  <script>
+    // Persist crop selector value in localStorage
+    const cropSelector = document.getElementById('cropSelector');
+    cropSelector.value = localStorage.getItem('xivbuddy_crop_selector') || '';
+    cropSelector.addEventListener('input', function() {
+      localStorage.setItem('xivbuddy_crop_selector', this.value);
+    });
+
+    // Helper: Build crop HTML for a bed (after planting)
+    function buildCropHtml(crop) {
+      let html = `<strong>${crop.cropName}</strong>`;
+      if (crop.neverHarvest) html += ' <span style="color: #b8860b; font-weight: bold;">[Never harvest]</span>';
+      if (crop.fullyGrown) html += ' <span style="color: #228b22; font-weight: bold;">[Fully grown]</span>';
+      html += ` <a href="/crops/${crop.id}/tend">Tend</a>`;
+      if (!crop.harvestedAt) html += ` | <a href="#" class="harvest-crop-link" data-crop-id="${crop.id}">Harvest</a>`;
+      return html;
+    }
+
+    // Helper: Build Plant link HTML for a bed
+    function buildPlantLinkHtml(plotId, bedNumber) {
+      return `<a href="#" class="plant-crop-link" data-plot-id="${plotId}" data-bed-number="${bedNumber}">Plant</a>`;
+    }
+
+    // Helper: Format duration as 'xh ym zs'
+    function formatDuration(ms) {
+      if (ms < 0) return '';
+      const s = Math.floor(ms / 1000) % 60;
+      const m = Math.floor(ms / 60000) % 60;
+      const h = Math.floor(ms / 3600000) % 24;
+      const d = Math.floor(ms / 86400000);
+      let out = [];
+      if (d) out.push(`${d}d`);
+      if (h) out.push(`${h}h`);
+      if (m) out.push(`${m}m`);
+      if (!d && !h && !m) out.push(`${s}s`);
+      return out.join(' ');
+    }
+
+    // Update all crop time displays
+    function updateCropTimes() {
+      const now = Date.now();
+      document.querySelectorAll('.crop-time').forEach(function(span) {
+        const ts = span.getAttribute('data-timestamp');
+        if (!ts) return;
+        const t = new Date(ts).getTime();
+        const diff = now - t;
+        span.querySelector('.crop-time-text').textContent = formatDuration(diff);
+        // Progress bar logic
+        const cropId = span.getAttribute('data-crop-id');
+        const progressBar = document.querySelector('.crop-progress-bar[data-crop-id="' + cropId + '"] .crop-progress-inner');
+        if (progressBar) {
+          let pct = Math.min(1, Math.max(0, diff / 86400000));
+          progressBar.style.width = (pct * 100) + '%';
+          // Color from green to red
+          const r = Math.floor(60 + pct * (220-60));
+          const g = Math.floor(205 - pct * (205-50));
+          const b = Math.floor(80 - pct * (80-60));
+          progressBar.style.background = `rgb(${r},${g},${b})`;
+        }
+      });
+    }
+    setInterval(updateCropTimes, 60000);
+    document.addEventListener('DOMContentLoaded', updateCropTimes);
+
+    // Use event delegation for all plant/harvest/tend/donotharvest buttons
+    document.addEventListener('click', function(e) {
+      // Plant handler
+      if (e.target && e.target.classList.contains('plant-crop-link')) {
+        e.preventDefault();
+        var cropValue = cropSelector.value;
+        if (!cropValue) {
+          alert('Please select a crop to plant first.');
+          return false;
+        }
+        var link = e.target;
+        var plotId = link.dataset.plotId;
+        var bedNumber = link.dataset.bedNumber;
+        fetch('/crops/new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: `plotId=${encodeURIComponent(plotId)}&bedNumber=${encodeURIComponent(bedNumber)}&cropName=${encodeURIComponent(cropValue)}`
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to plant crop');
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.crop) {
+            // Find the correct grid cell
+            const cell = link.closest('.crop-grid-cell');
+            if (cell) {
+              // Re-render the crop card for this bed
+              location.reload(); // For now, reload to ensure correct rendering
+            } else {
+              location.reload();
+            }
+          } else {
+            location.reload();
+          }
+        })
+        .catch(err => {
+          alert(err.message || 'Error planting crop');
+        });
+      }
+      // Do Not Harvest handler
+      if (e.target && e.target.classList.contains('donotharvest-crop-btn')) {
+        e.preventDefault();
+        if (!confirm('Mark this crop as Do Not Harvest?')) return;
+        var link = e.target;
+        var cropId = link.dataset.cropId;
+        var bedNumber = link.dataset.bedNumber;
+        var plotId = link.dataset.plotId;
+        fetch(`/crops/${cropId}/donotharvest`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to mark as Do Not Harvest');
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.crop) {
+            location.reload();
+          } else {
+            location.reload();
+          }
+        })
+        .catch(err => {
+          alert(err.message || 'Error marking as Do Not Harvest');
+        });
+      }
+      // Harvest/Remove handler
+      if (e.target && e.target.classList.contains('harvest-crop-btn')) {
+        e.preventDefault();
+        if (!confirm('Remove/Harvest this crop?')) return;
+        var link = e.target;
+        var cropId = link.dataset.cropId;
+        var bedNumber = link.dataset.bedNumber;
+        var plotId = link.dataset.plotId;
+        fetch(`/crops/${cropId}/harvest`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to harvest crop');
+          return res.json();
+        })
+        .then(data => {
+          location.reload();
+        })
+        .catch(err => {
+          alert(err.message || 'Error harvesting crop');
+        });
+      }
+      // Tend handler
+      if (e.target && e.target.classList.contains('tend-crop-btn')) {
+        e.preventDefault();
+        var link = e.target;
+        var cropId = link.dataset.cropId;
+        var bedNumber = link.dataset.bedNumber;
+        var plotId = link.dataset.plotId;
+        fetch(`/crops/${cropId}/tend`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to tend crop');
+          return res.json();
+        })
+        .then(data => {
+          location.reload();
+        })
+        .catch(err => {
+          alert(err.message || 'Error tending crop');
+        });
+      }
+      // Mark as Fully Grown handler
+      if (e.target && e.target.classList.contains('mark-fullygrown-crop-btn')) {
+        e.preventDefault();
+        console.log('Mark as Fully Grown clicked', e.target.dataset.cropId);
+        var link = e.target;
+        var cropId = link.dataset.cropId;
+        fetch(`/crops/${cropId}/mark-fullygrown`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to mark fully grown');
+          return res.json();
+        })
+        .then(data => {
+          location.reload();
+        })
+        .catch(err => {
+          alert(err.message || 'Error marking fully grown');
+        });
+      }
+      // Mark as Not Fully Grown handler
+      if (e.target && e.target.classList.contains('mark-not-fullygrown-crop-btn')) {
+        e.preventDefault();
+        console.log('Mark as Not Fully Grown clicked', e.target.dataset.cropId);
+        var link = e.target;
+        var cropId = link.dataset.cropId;
+        fetch(`/crops/${cropId}/mark-not-fullygrown`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to mark not fully grown');
+          return res.json();
+        })
+        .then(data => {
+          location.reload();
+        })
+        .catch(err => {
+          alert(err.message || 'Error marking not fully grown');
+        });
+      }
+    });
+  </script>
+  <hr>
+  <% if (plots.length === 0) { %>
+    <p>No plots registered yet.</p>
+  <% } else { %>
+    <% houses.forEach(function(house) { %>
+      <h2>
+        <%= house.district %> Ward <%= house.ward %> Plot <%= house.plot %>
+        <% if (house.OwningFC) { %>
+          (FC: <%= house.OwningFC.name %>)
+        <% } else if (house.OwningCharacter) { %>
+          (Personal: <%= house.OwningCharacter.name %>)
+        <% } %>
+      </h2>
+      <% plots.filter(plot => plot.HouseId === house.id).forEach(function(plot) { %>
+        <div class="card">
+          <strong><%= plot.type %></strong> [<%= plot.uid.slice(-12) %>] (<%= plot.beds %> beds)
+           <% if (plot.type === 'Round Garden Patch') { %>
+             <div class="crop-grid" style="grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr);">
+               <% for (let row = 0; row < 2; row++) { %>
+                 <% for (let col = 0; col < 2; col++) { %>
+                   <% let bed = row * 2 + col + 1; %>
+                   <% if (bed <= plot.beds) { %>
+                     <% let crop = crops.find(c => c.PlotId === plot.id && +c.bedNumber === bed); %>
+                     <div class="crop-grid-cell" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">
+                       <div style="font-size:0.82em;color:#888;margin-bottom:0.1em;">Bed <%= bed %></div>
+                       <% if (crop) { %>
+                         <div class="crop-card">
+                           <div class="crop-card-main">
+                             <span class="crop-card-name"><strong><%= crop.cropName %></strong></span>
+                           </div>
+                           <% if (crop.neverHarvest) { %>
+                             <div style="width:100%;text-align:center;margin-top:0.2em;"><span class="crop-card-badge never">[Never harvest]</span></div>
+                           <% } %>
+                           <% if (crop.fullyGrown) { %>
+                             <div style="width:100%;text-align:center;margin-top:0.1em;"><span class="crop-card-badge grown">[Fully grown]</span></div>
+                           <% } %>
+                           <% if (!crop.neverHarvest || (crop.neverHarvest && !crop.fullyGrown)) { %>
+                           <span class="crop-time" data-crop-id="<%= crop.id %>" data-timestamp="<%= crop.lastTendedAt ? crop.lastTendedAt.toISOString() : crop.plantedAt.toISOString() %>">
+                             <span class="crop-time-text">...</span> ago
+                           </span>
+                           <div class="crop-progress-bar" data-crop-id="<%= crop.id %>"><span class="crop-progress-inner"></span></div>
+                           <% } %>
+                           <div class="crop-card-actions">
+                             <% if (crop.neverHarvest) { %>
+                               <% if (!crop.fullyGrown) { %>
+                                 <div style="display:flex;gap:0.5em;justify-content:center;">
+                                   <button type="button" class="action-btn tend-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Tend</button>
+                                   <button type="button" class="action-btn remove-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Remove</button>
+                                 </div>
+                                 <button type="button" class="action-btn mark-fullygrown-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Mark as Fully Grown</button>
+                               <% } else { %>
+                                 <div style="display:flex;gap:0.5em;justify-content:center;">
+                                   <button type="button" class="action-btn remove-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Remove</button>
+                                 </div>
+                               <% } %>
+                             <% } else { %>
+                               <button type="button" class="action-btn tend-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Tend</button>
+                               <% if (!crop.harvestedAt) { %>
+                                 <button type="button" class="action-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Harvest</button>
+                                 <button type="button" class="action-btn donotharvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Do Not Harvest</button>
+                               <% } %>
+                             <% } %>
+                           </div>
+                         </div>
+                       <% } else { %>
+                         <div style="display:flex;align-items:center;justify-content:center;height:100%;"><button type="button" class="action-btn plant-crop-link" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">Plant</button></div>
+                       <% } %>
+                     </div>
+                   <% } %>
+                 <% } %>
+               <% } %>
+             </div>
+           <% } else if (plot.type === 'Oblong Garden Patch') { %>
+             <div class="crop-grid" style="grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);">
+               <% for (let row = 0; row < 2; row++) { %>
+                 <% for (let col = 0; col < 3; col++) { %>
+                   <% let bed = row * 3 + col + 1; %>
+                   <% if (bed <= plot.beds) { %>
+                     <% let crop = crops.find(c => c.PlotId === plot.id && +c.bedNumber === bed); %>
+                     <div class="crop-grid-cell" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">
+                       <div style="font-size:0.82em;color:#888;margin-bottom:0.1em;">Bed <%= bed %></div>
+                       <% if (crop) { %>
+                         <div class="crop-card">
+                           <div class="crop-card-main">
+                             <span class="crop-card-name"><strong><%= crop.cropName %></strong></span>
+                           </div>
+                           <% if (crop.neverHarvest) { %>
+                             <div style="width:100%;text-align:center;margin-top:0.2em;"><span class="crop-card-badge never">[Never harvest]</span></div>
+                           <% } %>
+                           <% if (crop.fullyGrown) { %>
+                             <div style="width:100%;text-align:center;margin-top:0.1em;"><span class="crop-card-badge grown">[Fully grown]</span></div>
+                           <% } %>
+                           <% if (!crop.neverHarvest || (crop.neverHarvest && !crop.fullyGrown)) { %>
+                           <span class="crop-time" data-crop-id="<%= crop.id %>" data-timestamp="<%= crop.lastTendedAt ? crop.lastTendedAt.toISOString() : crop.plantedAt.toISOString() %>">
+                             <span class="crop-time-text">...</span> ago
+                           </span>
+                           <div class="crop-progress-bar" data-crop-id="<%= crop.id %>"><span class="crop-progress-inner"></span></div>
+                           <% } %>
+                           <div class="crop-card-actions">
+                             <% if (crop.neverHarvest) { %>
+                               <% if (!crop.fullyGrown) { %>
+                                 <div style="display:flex;gap:0.5em;justify-content:center;">
+                                   <button type="button" class="action-btn tend-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Tend</button>
+                                   <button type="button" class="action-btn remove-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Remove</button>
+                                 </div>
+                                 <button type="button" class="action-btn mark-fullygrown-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Mark as Fully Grown</button>
+                               <% } else { %>
+                                 <div style="display:flex;gap:0.5em;justify-content:center;">
+                                   <button type="button" class="action-btn remove-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Remove</button>
+                                 </div>
+                               <% } %>
+                             <% } else { %>
+                               <button type="button" class="action-btn tend-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Tend</button>
+                               <% if (!crop.harvestedAt) { %>
+                                 <button type="button" class="action-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Harvest</button>
+                                 <button type="button" class="action-btn donotharvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Do Not Harvest</button>
+                               <% } %>
+                             <% } %>
+                           </div>
+                         </div>
+                       <% } else { %>
+                         <div style="display:flex;align-items:center;justify-content:center;height:100%;"><button type="button" class="action-btn plant-crop-link" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">Plant</button></div>
+                       <% } %>
+                     </div>
+                   <% } %>
+                 <% } %>
+               <% } %>
+             </div>
+           <% } else if (plot.type === 'Deluxe Garden Patch') { %>
+             <% // Map for Deluxe: beds 1-8 go in this order: 0,1,2,3,4,5,6,7 (bed 5 is center)
+                // grid positions: [0][1][2]
+                //                [3][4][5]
+                //                [6][7][8]
+                // Place bed 5 in center (row 1, col 1)
+                const deluxeBedOrder = [1,2,3,4,5,6,7,8];
+                let deluxeGrid = [
+                  [1,2,3],
+                  [4,null,5],
+                  [6,7,8]
+                ];
+             %>
+             <div class="crop-grid" style="grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);">
+               <% for (let row = 0; row < 3; row++) { %>
+                 <% for (let col = 0; col < 3; col++) { %>
+                   <% let bed = deluxeGrid[row][col]; %>
+                   <% if (bed == null) { %>
+                     <div class="crop-grid-cell" style="background:transparent;box-shadow:none;"></div>
+                   <% } else { %>
+                     <% let crop = crops.find(c => c.PlotId === plot.id && +c.bedNumber === bed); %>
+                     <div class="crop-grid-cell" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">
+                       <div style="font-size:0.82em;color:#888;margin-bottom:0.1em;">Bed <%= bed %></div>
+                       <% if (crop) { %>
+                         <div class="crop-card">
+                           <div class="crop-card-main">
+                             <span class="crop-card-name"><strong><%= crop.cropName %></strong></span>
+                           </div>
+                           <% if (crop.neverHarvest) { %>
+                             <div style="width:100%;text-align:center;margin-top:0.2em;"><span class="crop-card-badge never">[Never harvest]</span></div>
+                           <% } %>
+                           <% if (crop.fullyGrown) { %>
+                             <div style="width:100%;text-align:center;margin-top:0.1em;"><span class="crop-card-badge grown">[Fully grown]</span></div>
+                           <% } %>
+                           <% if (!crop.neverHarvest || (crop.neverHarvest && !crop.fullyGrown)) { %>
+                           <span class="crop-time" data-crop-id="<%= crop.id %>" data-timestamp="<%= crop.lastTendedAt ? crop.lastTendedAt.toISOString() : crop.plantedAt.toISOString() %>">
+                             <span class="crop-time-text">...</span> ago
+                           </span>
+                           <div class="crop-progress-bar" data-crop-id="<%= crop.id %>"><span class="crop-progress-inner"></span></div>
+                           <% } %>
+                           <div class="crop-card-actions">
+                             <% if (crop.neverHarvest) { %>
+                               <% if (!crop.fullyGrown) { %>
+                                 <div style="display:flex;gap:0.5em;justify-content:center;">
+                                   <button type="button" class="action-btn tend-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Tend</button>
+                                   <button type="button" class="action-btn remove-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Remove</button>
+                                 </div>
+                                 <button type="button" class="action-btn mark-fullygrown-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Mark as Fully Grown</button>
+                               <% } else { %>
+                                 <div style="display:flex;gap:0.5em;justify-content:center;">
+                                   <button type="button" class="action-btn remove-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Remove</button>
+                                 </div>
+                               <% } %>
+                             <% } else { %>
+                               <button type="button" class="action-btn tend-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Tend</button>
+                               <% if (!crop.harvestedAt) { %>
+                                 <button type="button" class="action-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Harvest</button>
+                                 <button type="button" class="action-btn donotharvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Do Not Harvest</button>
+                               <% } %>
+                             <% } %>
+                           </div>
+                         </div>
+                       <% } else { %>
+                         <div style="display:flex;align-items:center;justify-content:center;height:100%;"><button type="button" class="action-btn plant-crop-link" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">Plant</button></div>
+                       <% } %>
+                     </div>
+                   <% } %>
+                 <% } %>
+               <% } %>
+             </div>
+           <% } else { %>
+             <div class="crop-grid">
+               <% for (let bed = 1; bed <= plot.beds; bed++) { %>
+                 <% let crop = crops.find(c => c.PlotId === plot.id && +c.bedNumber === bed); %>
+                 <% if (crop) { %>
+                   <div class="crop-grid-cell" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">
+                     <div style="font-size:0.82em;color:#888;margin-bottom:0.1em;">Bed <%= bed %></div>
+                     <div class="crop-card">
+                       <div class="crop-card-main">
+                         <span class="crop-card-name"><strong><%= crop.cropName %></strong></span>
+                         <% if (crop.neverHarvest) { %>
+                           <span class="crop-card-badge never">[Never harvest]</span>
+                         <% } %>
+                         <% if (crop.fullyGrown) { %>
+                           <span class="crop-card-badge grown">[Fully grown]</span>
+                         <% } %>
+                       </div>
+                       <% if (!crop.neverHarvest) { %>
+                       <span class="crop-time" data-crop-id="<%= crop.id %>" data-timestamp="<%= crop.lastTendedAt ? crop.lastTendedAt.toISOString() : crop.plantedAt.toISOString() %>">
+                         <span class="crop-time-text">...</span> ago
+                       </span>
+                       <div class="crop-progress-bar" data-crop-id="<%= crop.id %>"><span class="crop-progress-inner"></span></div>
+                       <% } %>
+                       <div class="crop-card-actions">
+                         <% if (crop.neverHarvest) { %>
+                           <button type="button" class="action-btn remove-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Remove</button>
+                         <% } else { %>
+                           <button type="button" class="action-btn tend-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Tend</button>
+                           <% if (!crop.harvestedAt) { %>
+                             <button type="button" class="action-btn harvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Harvest</button>
+                             <button type="button" class="action-btn donotharvest-crop-btn" data-crop-id="<%= crop.id %>" data-bed-number="<%= bed %>" data-plot-id="<%= plot.id %>">Do Not Harvest</button>
+                           <% } %>
+                         <% } %>
+                       </div>
+                     </div>
+                   </div>
+                 <% } else { %>
+                   <div class="crop-grid-cell" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>" style="display:flex;align-items:center;justify-content:center;height:100%;"><button type="button" class="action-btn plant-crop-link" data-plot-id="<%= plot.id %>" data-bed-number="<%= bed %>">Plant</button></div>
+                 <% } %>
+               <% } %>
+             </div>
+           <% } %>
+        </div>
+      <% }); %>
+    <% }); %>
+  <% } %>
+  <script>
+    // Persist crop selector value in localStorage
+    const cropSelector = document.getElementById('cropSelector');
+    cropSelector.value = localStorage.getItem('xivbuddy_crop_selector') || '';
+    cropSelector.addEventListener('input', function() {
+      localStorage.setItem('xivbuddy_crop_selector', this.value);
+    });
+
+    // Helper: Build crop HTML for a bed (after planting)
+    function buildCropHtml(crop) {
+      let html = `<strong>${crop.cropName}</strong>`;
+      if (crop.neverHarvest) html += ' <span style="color: #b8860b; font-weight: bold;">[Never harvest]</span>';
+      if (crop.fullyGrown) html += ' <span style="color: #228b22; font-weight: bold;">[Fully grown]</span>';
+      html += ` <a href="/crops/${crop.id}/tend">Tend</a>`;
+      if (!crop.harvestedAt) html += ` | <a href="#" class="harvest-crop-link" data-crop-id="${crop.id}">Harvest</a>`;
+      return html;
+    }
+
+    // Helper: Build Plant link HTML for a bed
+    function buildPlantLinkHtml(plotId, bedNumber) {
+      return `<a href="#" class="plant-crop-link" data-plot-id="${plotId}" data-bed-number="${bedNumber}">Plant</a>`;
+    }
+
+    // AJAX Plant handler
+    function attachPlantHandlers() {
+      document.querySelectorAll('.plant-crop-link').forEach(function(link) {
+        link.onclick = function(e) {
+          e.preventDefault();
+          var cropValue = cropSelector.value;
+          if (!cropValue) {
+            alert('Please select a crop to plant first.');
+            return false;
+          }
+          var plotId = link.dataset.plotId;
+          var bedNumber = link.dataset.bedNumber;
+          fetch('/crops/new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `plotId=${encodeURIComponent(plotId)}&bedNumber=${encodeURIComponent(bedNumber)}&cropName=${encodeURIComponent(cropValue)}`
+          })
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to plant crop');
+            return res.json().catch(() => null);
+          })
+          .then(data => {
+            // If backend returns JSON, use it; otherwise, reload DOM
+            if (data && data.crop) {
+              // Replace the Plant link with crop info
+              link.parentElement.innerHTML = buildCropHtml(data.crop);
+              attachHarvestHandlers();
+            } else {
+              // fallback: reload
+              location.reload();
+            }
+          })
+          .catch(err => {
+            alert(err.message || 'Error planting crop');
+          });
+        };
+      });
+    }
+
+    // AJAX Harvest handler
+    function attachHarvestHandlers() {
+      document.querySelectorAll('.harvest-crop-link').forEach(function(link) {
+        link.onclick = function(e) {
+          e.preventDefault();
+          if (!confirm('Harvest this crop?')) return;
+          var cropId = link.dataset.cropId;
+          fetch(`/crops/${cropId}/harvest`, {
+            method: 'POST',
+            credentials: 'same-origin'
+          })
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to harvest crop');
+            return res.json().catch(() => null);
+          })
+          .then(data => {
+            // Remove crop, show Plant link again
+            let bedLi = link.closest('li');
+            let plantLinkHtml = buildPlantLinkHtml(bedLi.closest('[data-plot-id]')?.dataset.plotId || bedLi.closest('ul').dataset.plotId, bedLi.textContent.match(/Bed (\d+)/)?.[1] || '');
+            bedLi.innerHTML = `Bed ${bedLi.textContent.match(/Bed (\d+)/)?.[1] || ''}: ${plantLinkHtml}`;
+            attachPlantHandlers();
+          })
+          .catch(err => {
+            alert(err.message || 'Error harvesting crop');
+          });
+        };
+      });
+    }
+
+    // Initial attach
+    attachPlantHandlers();
+    attachHarvestHandlers();
+  </script>
+</body>
+</html>

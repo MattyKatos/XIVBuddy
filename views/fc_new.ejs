@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register New Free Company - XIVBuddy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+  <div class="container">
+    <h1>Register New Free Company</h1>
+    <div class="card fc-card" style="margin-bottom:1.5em;text-align:center;">
+      <strong style="font-size:1.1em;display:block;">FC Name</strong>
+      <div class="fc-card-badge fc-tag" style="display:block;font-weight:bold;margin:0.2em 0;">[FC Tag]</div>
+      <div class="fc-card-badge lodestone" style="display:block;">Lodestone: ...</div>
+    </div>
+    <form method="POST" action="/fcs/new" style="max-width:400px;margin:0 auto;text-align:center;">
+
+    <label>Lodestone ID:<br>
+      <input type="text" name="lodestoneId" required>
+    </label><br><br>
+    <button type="submit" class="action-btn">Register Free Company</button>
+  </form>
+  <div style="text-align:center;margin-top:1em;">
+    <a href="/fcs" class="action-btn">Back to Free Companies</a>
+  </div>
+  </div>
+</body>
+</html>
