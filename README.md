@@ -70,9 +70,6 @@ MYSQL_DATABASE=xivbuddy
 - `public/` — Static assets (CSS, JS)
 - `docker-compose.yml` — Docker services
 
-## Contributing
-Pull requests are welcome! For major changes, please open an issue first to discuss what you’d like to change.
-
 ## License
 MIT
 
