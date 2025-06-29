@@ -121,7 +121,7 @@ app.use('/channels', channelsRouter);
 const mainRouter = require('./routes');
 app.use('/', mainRouter);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 6969;
 // Start server (database should be migrated manually; do not sync in production)
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
