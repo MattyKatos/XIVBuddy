@@ -16,25 +16,29 @@ router.get('/', ensureAuth, async (req, res) => {
   let houses = await House.findAll({
     include: [
       { model: FC, as: 'OwningFC' },
-      { model: Character, as: 'OwningCharacter' }
+      { model: Character, as: 'OwningCharacter' },
+      { model: Character, as: 'SharedCharacters', through: { attributes: [] } }
     ]
   });
   houses = houses.filter(house => {
-    if (['Small','Medium','Large'].includes(house.type)) {
+    if (["Small","Medium","Large"].includes(house.type)) {
       // Personal or FC house
       if (house.fcId) {
         // FC house: only if user is member
         return fcIds.includes(house.fcId);
       } else if (house.characterId) {
-        // Personal: only if user owns or house is shared with them
-        return characterIds.includes(house.characterId) || (house.sharedWith && house.sharedWith.includes(req.user.id));
+        // Personal: only if user owns or house is shared with their characters
+        const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+        return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
       }
-    } else if (house.type === 'FC Room') {
-      // FC Room: only character owner
-      return characterIds.includes(house.characterId);
-    } else if (house.type === 'Apartment') {
-      // Apartment: only character owner
-      return characterIds.includes(house.characterId);
+    } else if (house.type === "FC Room") {
+      // FC Room: only character owner or shared
+      const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+      return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
+    } else if (house.type === "Apartment") {
+      // Apartment: only character owner or shared
+      const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+      return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
     }
     // All other types: default to not shown
     return false;

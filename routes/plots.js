@@ -15,7 +15,8 @@ router.get('/', ensureAuth, async (req, res) => {
   let houses = await House.findAll({
     include: [
       { model: require('../models').FC, as: 'OwningFC' },
-      { model: require('../models').Character, as: 'OwningCharacter' }
+      { model: require('../models').Character, as: 'OwningCharacter' },
+      { model: require('../models').Character, as: 'SharedCharacters', through: { attributes: [] } }
     ]
   });
   houses = houses.filter(house => {
@@ -24,15 +25,18 @@ router.get('/', ensureAuth, async (req, res) => {
         // FC house: only if user is member
         return fcIds.includes(house.fcId);
       } else if (house.characterId) {
-        // Personal: only if user owns or house is shared with them
-        return characterIds.includes(house.characterId) || (house.sharedWith && house.sharedWith.includes(req.user.id));
+        // Personal: only if user owns or house is shared with their characters
+        const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+        return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
       }
     } else if (house.type === "FC Room") {
-      // FC Room: only character owner
-      return characterIds.includes(house.characterId);
+      // FC Room: only character owner or shared
+      const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+      return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
     } else if (house.type === "Apartment") {
-      // Apartment: only character owner
-      return characterIds.includes(house.characterId);
+      // Apartment: only character owner or shared
+      const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+      return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
     }
     return false;
   });

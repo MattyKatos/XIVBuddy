@@ -2,7 +2,22 @@ const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
 const { ensureAuth } = require('../middleware');
-const { Crop, Plot, House, Character, FC } = require('../models');
+const { Crop, Plot, House, Character, FC, AlertQueue } = require('../models');
+
+// Helper for house access logic
+async function userCanAccessHouse(req, house) {
+  const fcs = await req.user.getFCs();
+  const fcIds = fcs.map(fc => fc.id);
+  const characters = await Character.findAll({ where: { UserId: req.user.id } });
+  const characterIds = characters.map(c => c.id);
+  const sharedCharacters = await house.getSharedCharacters();
+  const sharedIds = (sharedCharacters || []).map(c => c.id);
+  return (
+    (house.fcId && fcIds.includes(house.fcId)) ||
+    (house.characterId && characterIds.includes(house.characterId)) ||
+    characterIds.some(id => sharedIds.includes(id))
+  );
+}
 
 // List all crops
 router.get('/', ensureAuth, async (req, res) => {
@@ -14,7 +29,8 @@ router.get('/', ensureAuth, async (req, res) => {
   let houses = await House.findAll({
     include: [
       { model: FC, as: 'OwningFC' },
-      { model: Character, as: 'OwningCharacter' }
+      { model: Character, as: 'OwningCharacter' },
+      { model: Character, as: 'SharedCharacters', through: { attributes: [] } }
     ]
   });
   houses = houses.filter(house => {
@@ -23,15 +39,18 @@ router.get('/', ensureAuth, async (req, res) => {
         // FC house: only if user is member
         return fcIds.includes(house.fcId);
       } else if (house.characterId) {
-        // Personal: only if user owns or house is shared with them
-        return characterIds.includes(house.characterId) || (house.sharedWith && house.sharedWith.includes(req.user.id));
+        // Personal: only if user owns or house is shared with their characters
+        const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+        return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
       }
     } else if (house.type === "FC Room") {
-      // FC Room: only character owner
-      return characterIds.includes(house.characterId);
+      // FC Room: only character owner or shared
+      const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+      return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
     } else if (house.type === "Apartment") {
-      // Apartment: only character owner
-      return characterIds.includes(house.characterId);
+      // Apartment: only character owner or shared
+      const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+      return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
     }
     return false;
   });
@@ -95,14 +114,9 @@ router.post('/:id/harvest', ensureAuth, async (req, res) => {
   const house = await House.findByPk(plot.HouseId);
   if (!house) return res.status(404).send('House not found');
 
-  // Check if user owns the house (FC or Character)
-  const fcs = await req.user.getFCs();
-  const fcIds = fcs.map(fc => fc.id);
-  const characters = await Character.findAll({ where: { UserId: req.user.id } });
-  const characterIds = characters.map(c => c.id);
-  if (!((house.fcId && fcIds.includes(house.fcId)) || (house.characterId && characterIds.includes(house.characterId)))) {
-    return res.status(403).send('Not authorized');
-  }
+    if (!(await userCanAccessHouse(req, house))) {
+      return res.status(403).send('Not authorized');
+    }
   await crop.destroy();
   if (req.xhr || req.headers.accept?.includes('application/json')) {
     res.json({ success: true });
@@ -122,15 +136,30 @@ router.post('/tend-all', ensureAuth, async (req, res) => {
   const fcIds = fcs.map(fc => fc.id);
   const characters = await Character.findAll({ where: { UserId: req.user.id } });
   const characterIds = characters.map(c => c.id);
+  // Fetch all houses with sharing info
   const houses = await House.findAll({
-    where: {
-      [Op.or]: [
-        { fcId: fcIds.length > 0 ? fcIds : null },
-        { characterId: characterIds.length > 0 ? characterIds : null }
-      ]
-    }
+    include: [
+      { model: FC, as: 'OwningFC' },
+      { model: Character, as: 'OwningCharacter' },
+      { model: Character, as: 'SharedCharacters', through: { attributes: [] } }
+    ]
   });
-  const houseIds = houses.map(h => h.id);
+  // Filter houses to include owned or shared
+  const filteredHouses = houses.filter(house => {
+    if (["Small","Medium","Large"].includes(house.type)) {
+      if (house.fcId) {
+        return fcIds.includes(house.fcId);
+      } else if (house.characterId) {
+        const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+        return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
+      }
+    } else if (house.type === "FC Room" || house.type === "Apartment") {
+      const sharedIds = (house.SharedCharacters || []).map(c => c.id);
+      return characterIds.includes(house.characterId) || characterIds.some(id => sharedIds.includes(id));
+    }
+    return false;
+  });
+  const houseIds = filteredHouses.map(h => h.id);
   const plots = await Plot.findAll({ where: { HouseId: houseIds } });
   const plotIds = plots.map(p => p.id);
   const crops = await Crop.findAll({ where: { PlotId: plotIds } });
@@ -167,11 +196,7 @@ router.post('/:id/tend', ensureAuth, async (req, res) => {
   if (!house) return res.status(404).send('House not found');
 
   // Check if user owns the house (FC or Character)
-  const fcs = await req.user.getFCs();
-  const fcIds = fcs.map(fc => fc.id);
-  const characters = await Character.findAll({ where: { UserId: req.user.id } });
-  const characterIds = characters.map(c => c.id);
-  if (!((house.fcId && fcIds.includes(house.fcId)) || (house.characterId && characterIds.includes(house.characterId)))) {
+  if (!(await userCanAccessHouse(req, house))) {
     return res.status(403).send('Not authorized');
   }
   crop.lastTendedAt = new Date();
@@ -202,12 +227,7 @@ router.post('/:id/donotharvest', ensureAuth, async (req, res) => {
   const house = await House.findByPk(plot.HouseId);
   if (!house) return res.status(404).send('House not found');
 
-  // Check if user owns the house (FC or Character)
-  const fcs = await req.user.getFCs();
-  const fcIds = fcs.map(fc => fc.id);
-  const characters = await Character.findAll({ where: { UserId: req.user.id } });
-  const characterIds = characters.map(c => c.id);
-  if (!((house.fcId && fcIds.includes(house.fcId)) || (house.characterId && characterIds.includes(house.characterId)))) {
+  if (!(await userCanAccessHouse(req, house))) {
     return res.status(403).send('Not authorized');
   }
   crop.neverHarvest = true;
@@ -228,11 +248,7 @@ router.post('/:id/mark-fullygrown', ensureAuth, async (req, res) => {
   if (!plot) return res.status(404).send('Plot not found');
   const house = await House.findByPk(plot.HouseId);
   if (!house) return res.status(404).send('House not found');
-  const fcs = await req.user.getFCs();
-  const fcIds = fcs.map(fc => fc.id);
-  const characters = await Character.findAll({ where: { UserId: req.user.id } });
-  const characterIds = characters.map(c => c.id);
-  if (!((house.fcId && fcIds.includes(house.fcId)) || (house.characterId && characterIds.includes(house.characterId)))) {
+  if (!(await userCanAccessHouse(req, house))) {
     return res.status(403).send('Not authorized');
   }
   crop.fullyGrown = true;
@@ -253,11 +269,7 @@ router.post('/:id/mark-not-fullygrown', ensureAuth, async (req, res) => {
   if (!plot) return res.status(404).send('Plot not found');
   const house = await House.findByPk(plot.HouseId);
   if (!house) return res.status(404).send('House not found');
-  const fcs = await req.user.getFCs();
-  const fcIds = fcs.map(fc => fc.id);
-  const characters = await Character.findAll({ where: { UserId: req.user.id } });
-  const characterIds = characters.map(c => c.id);
-  if (!((house.fcId && fcIds.includes(house.fcId)) || (house.characterId && characterIds.includes(house.characterId)))) {
+  if (!(await userCanAccessHouse(req, house))) {
     return res.status(403).send('Not authorized');
   }
   crop.fullyGrown = false;
